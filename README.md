@@ -7,7 +7,7 @@ NB** The analyses have been always run in a Linux environment. Therefore, we don
 ## 1) Reproduce original environments
 Run the following command to recreate the same conda environment used for the analysis: 
 
-```console
+```bash
 mamba env create -f code/envs/cosmx_archive.yaml
 ```
 
@@ -20,14 +20,14 @@ devtools::install_github("https://github.com/Nanostring-Biostats/InSituType@v1.0
 
 Create a separate conda environment that will be used to run snakemake (v7.14.0):
 
-```console
+```bash
 mamba env create -f code/envs/snakemake.yaml
 ```
 
 ## 2) Reproduce paper results
 The whole pipeline is expected to be run within the `code/` subdirectory:
 
-```console
+```bash
 cd code/ #Transfer within the code/ subdirectory from the Figure4/ directory
 ln -s snakefiles/Snakefile Snakefile #Create a soft symlink to the snakefiles/Snakefile file in the current directory
 conda activate snakemake #Activate conda environment with Snakemake installed in it
@@ -37,7 +37,7 @@ snakemake --use-conda # Execute Snakemake by telling it to activate the conda en
 
 ***Some steps of the Snakemake pipeline require a considerable amount of memory. Therefore, it is recommended to run the pipeline on a HPC environment. Alternatively, you can run specific pipeline rules by explicitly call their name***
 
-```console
+```bash
 snakemake -np rule_name
 snakemake rule_name
 ```
@@ -48,7 +48,7 @@ You can download our modified version of the Snakemake profile for SGE scheduler
 Follow the instructions on the Github repository to download and set up the Snakemake profile on the cluster. 
 Once the Snakemake profile is accessible in the right `~/.config/snakemake/` folder, you can run Snakemake using the following command:
 
-```console
+```bash
 snakemake --profile cssge -j 1 --use-conda
 ```
 
