@@ -4,7 +4,7 @@ We recommend to download the same conda version from https://repo.anaconda.com/m
 
 NB** The analyses have been always run in a Linux environment. Therefore, we don't know whether package dependencies might create issues on MacOS or Windows
 
-##1) Reproduce original environments
+## 1) Reproduce original environments
 Run the following command to recreate the same conda environment used for the analysis: 
 
 ```
@@ -24,7 +24,7 @@ Create a separate conda environment that will be used to run snakemake (v7.14.0)
 mamba env create -f code/envs/snakemake.yaml
 ```
 
-##2) Reproduce paper results
+## 2) Reproduce paper results
 The whole pipeline is expected to be run within the `code/` subdirectory:
 
 ```
