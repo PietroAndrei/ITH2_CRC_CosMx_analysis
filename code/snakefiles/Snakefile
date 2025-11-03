@@ -1,0 +1,659 @@
+configfile: "config.yaml"
+samples = ["UH20","CR48","CR21","CR36"]
+
+
+rule all:
+	input:
+		"intermediate_outputs/parquet_meta/CosMx_CR48_meta_plus_poly_V2.parquet",
+		"intermediate_outputs/parquet_meta/CosMx_CR36_meta_plus_poly.parquet",
+		"intermediate_outputs/Seurat/Cosmx_Slide1_CR48_SeuratBase.rds",
+		"intermediate_outputs/Seurat/Cosmx_Slide2_CR36_SeuratBase.rds",
+		"../data/Pelka/Pelka_ImmuneStromal_reference_matrix.rds",
+		"../plots/FigS5D_Pelka_CD74_expression_Epi_Macro_comparison.pdf",
+		expand("intermediate_outputs/InSituType/unsup/Cosmx_Slide1_{sample}_Unsup_Clust_res.rds",sample=["UH20","CR48"]),
+		expand("intermediate_outputs/InSituType/unsup/Cosmx_Slide2_{sample}_Unsup_Clust_res.rds",sample=["CR21","CR36"]),
+		expand("intermediate_outputs/InSituType/unsup/Cosmx_Slide1_{sample}_FinalClust_res.rds",sample=["UH20","CR48"]),
+		expand("intermediate_outputs/InSituType/unsup/Cosmx_Slide2_{sample}_FinalClust_res.rds",sample=["CR21","CR36"]),
+		expand("intermediate_outputs/Seurat_meta/InSituType/V2/Cosmx_Slide1_{sample}_InSitu_celltype_plus_touching_cells_V2_meta.rds",sample=["UH20","CR48"]),
+		expand("intermediate_outputs/Seurat_meta/InSituType/V2/Cosmx_Slide2_{sample}_InSitu_celltype_plus_touching_cells_V2_meta.rds",sample=["CR21","CR36"]),
+		expand("../plots/FigS4A.{sample}.pdf",sample=samples),
+		expand("intermediate_outputs/InSituType/sup/res/TNK/{sample}_TNK_Pelka_SubClust_res.rds",sample=samples),
+		expand("intermediate_outputs/InSituType/sup/res/Myeloid/{sample}_Myeloid_Pelka_SubClust_res.rds",sample=samples),
+		"../plots/FigS4B_Myeloid.pdf",
+		"../plots/FOVplots/Fig4A.pdf",
+		"intermediate_outputs/DE_res/epiT_vs_epiOnly/InSituType/Cosmx_HM_InSitu_epiT_epiOnly_4Neigh_DE_res_TNKsubset.rds",
+		"intermediate_outputs/DE_res/epiT_vs_epiOnly/InSituType/Cosmx_nHM_InSitu_epiT_epiOnly_4Neigh_DE_res_TNKsubset.rds",
+		"intermediate_outputs/DE_res/epiT_vs_epiOnly/InSituType/Cosmx_ALL_InSitu_epiT_epiOnly_4Neigh_DE_res_TNKsubset.rds",
+		"intermediate_outputs/DE_res/Ttouch_vs_Tnotouch/InSituType/Cosmx_HM_Ttouch_Tnotouch_DE_res_TNKsubset.rds",
+		"intermediate_outputs/DE_res/Ttouch_vs_Tnotouch/InSituType/Cosmx_nHM_Ttouch_Tnotouch_DE_res_TNKsubset.rds",
+		"intermediate_outputs/DE_res/Ttouch_vs_Tnotouch/InSituType/Cosmx_ALL_Ttouch_Tnotouch_DE_res_TNKsubset.rds",
+		"intermediate_outputs/DE_res/myelT_vs_myelNoT/Cosmx_HM_myelT_myelNoT_DE_res.rds",
+		"intermediate_outputs/DE_res/myelT_vs_myelNoT/Cosmx_nHM_myelT_myelNoT_DE_res.rds",
+		"intermediate_outputs/DE_res/myelT_vs_myelNoT/Cosmx_ALL_myelT_myelNoT_DE_res.rds",
+		"../plots/FigS5B_CD74_expression_EpiT_MacroT_boxplot.pdf",
+		"intermediate_outputs/HCT116/res/HCT116_EpiT_EpiOnly_DE_res_NCG7.rds",
+		"../plots/Fig4B_ALL_TAMT_de_volcano.pdf",
+		"../data/CosMx_Nolan/CosMx_data_Fig6I_CRC.rds",
+		"intermediate_outputs/CosMx_Nolan/InSituType/unsup/Cosmx_Nolan_Unsup_Clust_res.rds",
+		"intermediate_outputs/CosMx_Nolan/InSituType/unsup/Cosmx_Nolan_Unsup_FinalClust_res.rds",
+		"../plots/FigS4D_FDR_barplot_TAMT_EpiT_APP_IFN_genes.pdf"
+
+rule merge_cosmx_meta_polygons_Slide1:
+	output:
+		merged_data1 = "intermediate_outputs/parquet_meta/CosMx_CR48_meta_plus_poly_V2.parquet",
+		merged_data2 = "intermediate_outputs/parquet_meta/CosMx_UH20_meta_plus_poly_V2.parquet"
+	params:
+		slide = "S0",
+		input_path = config["cosmx_flat_data"]+"S0"
+	priority: 60
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 15000,
+		mem_mb2 = 15000,
+		runtime_min = 360,
+		disk_mb = 3000
+	script:
+		config["scripts"]+"merge_cosmx_meta_polygons.R"
+
+rule merge_cosmx_meta_polygons_Slide2:
+	output:
+		merged_data1 = "intermediate_outputs/parquet_meta/CosMx_CR36_meta_plus_poly.parquet",
+		merged_data2 = "intermediate_outputs/parquet_meta/CosMx_CR21_meta_plus_poly.parquet"
+	params:
+		slide = "S1",
+		input_path = config["cosmx_flat_data"]+"S1"
+	priority: 60
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 15000,
+		mem_mb2 = 15000,
+		runtime_min = 360,
+		disk_mb = 3000
+	script:
+		config["scripts"]+"merge_cosmx_meta_polygons.R"
+
+rule create_cosmx_sample_seurat:
+	input:
+		seurat = config["cosmx_data"]+"SeuratObject_Base.RDS"
+	output:
+		"intermediate_outputs/Seurat/Cosmx_Slide1_CR48_SeuratBase.rds",
+		"intermediate_outputs/Seurat/Cosmx_Slide1_UH20_SeuratBase.rds",
+		"intermediate_outputs/Seurat/Cosmx_Slide2_CR21_SeuratBase.rds",
+		"intermediate_outputs/Seurat/Cosmx_Slide2_CR36_SeuratBase.rds"
+	params:
+		utils = "src/cosmx_utils.R",
+		meta_path = "intermediate_outputs/parquet_meta/",
+		seurat_path = "intermediate_outputs/Seurat/"
+	priority: 59
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 35000,
+		mem_mb2 = 35000,
+		runtime_min = 360,
+		disk_mb = 3000
+	script:
+		config["scripts"]+"create_cosmx_sample_seurat_and_transcripts_files.R"
+
+#Create immune/stromal reference profiles to use with InSituType in the supervised setting
+rule create_pelka_reference_for_insitutype:
+	output:
+		ref_mat = "../data/Pelka/Pelka_ImmuneStromal_reference_matrix.rds"
+	params:
+		utils = "src/cosmx_utils.R",
+		pelka_path = "../data/Pelka/GSE178341",
+		cosmx_genes = "../data/CosMx_1K_gene_list.rds",
+		ncg = config["ncg_genes"]
+	priority: 58
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 40000,
+		mem_mb2 = 40000,
+		runtime_min = 360,
+		disk_mb = 3000
+	script:
+		config["scripts"]+"create_pelka_reference_for_insitutype.R"
+
+####THIS SCRIPT WILL ACTUALLY PRODUCE A PANEL FOR SUPPLEMENTARY FIGURE 5. IT DOESN'T MAKE SENSE TO SPLIT IT FROM THE REST OF THE PIPELINE
+rule compare_pelka_cd74_expression_epi_macro:
+	output:
+		plots = "../plots/FigS5D_Pelka_CD74_expression_Epi_Macro_comparison.pdf"
+	params:
+		pelka_path = "../data/Pelka/GSE178341",
+		utils = "src/cosmx_utils.R",
+		ncg = config["ncg_genes"]
+	priority: 57
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 60000,
+		mem_mb2 = 60000,
+		runtime_min = 360,
+		disk_mb = 3000
+	script:
+		config["scripts"]+"compare_pelka_cd74_expression_epi_macro.R"
+
+
+#Peform clustering analysis with InSituType on all QC-passing single cells at the single sample level (split Slide1 and Slide2)
+rule all_clustering_Slide1:
+	input:
+		expand("intermediate_outputs/InSituType/unsup/Cosmx_Slide1_{sample}_Unsup_Clust_res.rds",sample=["UH20","CR48"])
+rule insitutype_clustering_Slide1:
+	input:
+		seurat = "intermediate_outputs/Seurat/Cosmx_Slide1_{sample}_SeuratBase.rds"
+	output:
+		plots = "intermediate_outputs/plots/ClusterPlots/InSituType/Cosmx_Slide1_{sample}_InSituClust_UMAP_plus_FOVplot.pdf",
+		markers = "intermediate_outputs/DE_res/ClusterMarkers/InSituType/unsup/Cosmx_Slide1_{sample}_MainClusters_markers.rds",
+		cell_anno = "intermediate_outputs/CellAnno/InSituType/unsup/Cosmx_Slide1_{sample}_MainClusters_cell_annotation.rds",
+		InSitu_unsup_res = "intermediate_outputs/InSituType/unsup/Cosmx_Slide1_{sample}_Unsup_Clust_res.rds"
+	params:
+		utils = "src/cosmx_utils.R"
+	priority: 56
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 12000,
+		mem_mb2 = 12000,
+		runtime_min = 360,
+		disk_mb = 3000
+	script:
+		config["scripts"]+"insitutype_clustering.R"
+
+rule all_clustering_Slide2:
+	input:
+		expand("intermediate_outputs/InSituType/unsup/Cosmx_Slide2_{sample}_Unsup_Clust_res.rds",sample=["CR21","CR36"])
+rule insitutype_clustering_Slide2:
+	input:
+		seurat = "intermediate_outputs/Seurat/Cosmx_Slide2_{sample}_SeuratBase.rds"
+	output:
+		plots = "intermediate_outputs/plots/ClusterPlots/InSituType/Cosmx_Slide2_{sample}_InSituClust_UMAP_plus_FOVplot.pdf",
+		markers = "intermediate_outputs/DE_res/ClusterMarkers/InSituType/unsup/Cosmx_Slide2_{sample}_MainClusters_markers.rds",
+		cell_anno = "intermediate_outputs/CellAnno/InSituType/unsup/Cosmx_Slide2_{sample}_MainClusters_cell_annotation.rds",
+		InSitu_unsup_res = "intermediate_outputs/InSituType/unsup/Cosmx_Slide2_{sample}_Unsup_Clust_res.rds"
+	params:
+		utils = "src/cosmx_utils.R"
+	priority: 56
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 12000,
+		mem_mb2 = 12000,
+		runtime_min = 360,
+		disk_mb = 3000
+	script:
+		config["scripts"]+"insitutype_clustering.R"
+
+#Refine Main clusters previously identified with InSituType and unify cell type labels (for the moment, only T/NK clusters are refined)
+rule all_refine_clust_Slide1:
+	input:
+		expand("intermediate_outputs/InSituType/unsup/Cosmx_Slide1_{sample}_FinalClust_res.rds",sample=["UH20","CR48"])
+rule refine_insitutype_clusters_Slide1:
+	input:
+		seurat = "intermediate_outputs/Seurat/Cosmx_Slide1_{sample}_SeuratBase.rds",
+		unsup_res = "intermediate_outputs/InSituType/unsup/Cosmx_Slide1_{sample}_Unsup_Clust_res.rds"
+	output:
+		plots = "intermediate_outputs/plots/ClusterPlots/InSituType/Cosmx_Slide1_{sample}_FINAL_InSituClust_UMAP_plus_FOVplot.pdf",
+		markers = "intermediate_outputs/DE_res/ClusterMarkers/InSituType/unsup/Cosmx_Slide1_{sample}_FinalClusters_markers.rds",
+		cell_anno = "intermediate_outputs/CellAnno/InSituType/unsup/Cosmx_Slide1_{sample}_FinalClusters_cell_annotation.rds",
+		InSitu_refined_res = "intermediate_outputs/InSituType/unsup/Cosmx_Slide1_{sample}_FinalClust_res.rds",
+		final_meta = "intermediate_outputs/Seurat_meta/InSituType/Cosmx_Slide1_{sample}_InSitu_celltype_plus_touching_cells_meta.rds"
+	params:
+		utils = "src/cosmx_utils.R"
+	priority: 55
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 15000,
+		mem_mb2 = 15000,
+		runtime_min = 360,
+		disk_mb = 3000
+	script:
+		config["scripts"]+"refine_insitutype_clusters.R"
+#Define touching cells using st_intersects() instead of st_relate()
+rule all_touching_cells_Slide1:
+	input:
+		expand("intermediate_outputs/Seurat_meta/InSituType/V2/Cosmx_Slide1_{sample}_InSitu_celltype_plus_touching_cells_V2_meta.rds",sample=["UH20","CR48"])
+rule touching_cells_V2_Slide1:
+	input:
+		meta = "intermediate_outputs/Seurat_meta/InSituType/Cosmx_Slide1_{sample}_InSitu_celltype_plus_touching_cells_meta.rds"
+	output:
+		final_meta = "intermediate_outputs/Seurat_meta/InSituType/V2/Cosmx_Slide1_{sample}_InSitu_celltype_plus_touching_cells_V2_meta.rds"
+	params:
+		utils = "src/cosmx_utils.R"
+	priority: 54
+	conda:
+		"cosmx"
+	resources:
+		 mem_mb = 5000,
+		 mem_mb2 = 5000,
+		 runtime_min = 180,
+		 disk_mb = 1000
+	script:
+		config["scripts"]+"touching_cells_V2.R"
+
+rule all_refine_clust_Slide2:
+	input:
+		expand("intermediate_outputs/InSituType/unsup/Cosmx_Slide2_{sample}_FinalClust_res.rds",sample=["CR21","CR36"])
+rule refine_insitutype_clusters_Slide2:
+	input:
+		seurat = "intermediate_outputs/Seurat/Cosmx_Slide2_{sample}_SeuratBase.rds",
+		unsup_res = "intermediate_outputs/InSituType/unsup/Cosmx_Slide2_{sample}_Unsup_Clust_res.rds"
+	output:
+		plots = "intermediate_outputs/plots/ClusterPlots/InSituType/Cosmx_Slide2_{sample}_FINAL_InSituClust_UMAP_plus_FOVplot.pdf",
+		markers = "intermediate_outputs/DE_res/ClusterMarkers/InSituType/unsup/Cosmx_Slide2_{sample}_FinalClusters_markers.rds",
+		cell_anno = "intermediate_outputs/CellAnno/InSituType/unsup/Cosmx_Slide2_{sample}_FinalClusters_cell_annotation.rds",
+		InSitu_refined_res = "intermediate_outputs/InSituType/unsup/Cosmx_Slide2_{sample}_FinalClust_res.rds",
+		final_meta = "intermediate_outputs/Seurat_meta/InSituType/Cosmx_Slide2_{sample}_InSitu_celltype_plus_touching_cells_meta.rds"
+	params:
+		utils = "src/cosmx_utils.R"
+	priority: 55
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 15000,
+		mem_mb2 = 15000,
+		runtime_min = 480,
+		disk_mb = 3000
+	script:
+		config["scripts"]+"refine_insitutype_clusters.R"
+
+#Define touching cells using st_intersects() instead of st_relate()
+rule all_touching_cells_Slide2:
+	input:
+		expand("intermediate_outputs/Seurat_meta/InSituType/V2/Cosmx_Slide2_{sample}_InSitu_celltype_plus_touching_cells_V2_meta.rds",sample=["CR21","CR36"])
+rule touching_cells_V2_Slide2:
+	input:
+		meta = "intermediate_outputs/Seurat_meta/InSituType/Cosmx_Slide2_{sample}_InSitu_celltype_plus_touching_cells_meta.rds"
+	output:
+		final_meta = "intermediate_outputs/Seurat_meta/InSituType/V2/Cosmx_Slide2_{sample}_InSitu_celltype_plus_touching_cells_V2_meta.rds"
+	params:
+		utils = "src/cosmx_utils.R"
+	priority: 54
+	conda:
+		"cosmx"
+	resources:
+		 mem_mb = 5000,
+		 mem_mb2 = 5000,
+		 runtime_min = 180,
+		 disk_mb = 1000
+	script:
+		config["scripts"]+"touching_cells_V2.R"
+
+#sample-specific UMAP with updated and definitive colorscheme
+rule all_final_plots:
+	input:
+		expand("../plots/FigS4A.{sample}.pdf",sample=samples)
+rule insitutype_final_umap_plots:
+	output:
+		plot = "../plots/FigS4A.{sample}.pdf",
+		dimreds = "intermediate_outputs/InSituType/unsup/{sample}_pca_umap_embeddings.rds"
+	params:
+		utils = "src/cosmx_utils.R",
+		meta_path = "intermediate_outputs/Seurat_meta/InSituType/V2/"
+	priority: 53
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 15000,
+		mem_mb2 = 15000,
+		runtime_min = 180,
+		disk_mb = 1500
+	script:
+		config["scripts"]+"insitutype_final_umap_plots.R"
+
+
+#Apply the Supervised pipeline of InSituType to map CosMx cells to Pelka cell types
+#T/NK cells
+rule all_TNK_pelka:
+	input:
+		expand("intermediate_outputs/InSituType/sup/res/TNK/{sample}_TNK_Pelka_SubClust_res.rds",sample=samples)
+rule insitutype_pelka_TNK_subclustering:
+	output:
+		res = "intermediate_outputs/InSituType/sup/res/TNK/{sample}_TNK_Pelka_SubClust_res.rds",
+		plot = "intermediate_outputs/plots/ClusterPlots/InSituType/sup/TNK/{sample}_TNK_Pelka_SubClust_flightpath_plot.pdf"
+	params:
+		utils = "src/cosmx_utils.R",
+		meta_path = "intermediate_outputs/Seurat_meta/InSituType/V2/",
+		ref_mat = "../data/Pelka/Pelka_ImmuneStromal_reference_matrix.rds"
+	priority: 52
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 15000,
+		mem_mb2 = 15000,
+		runtime_min = 360,
+		disk_mb = 3000
+	script:
+		config["scripts"]+"insitutype_pelka_TNK_subclustering.R"
+#Myeloid cells
+rule all_Myeloid_pelka:
+	input:
+		expand("intermediate_outputs/InSituType/sup/res/Myeloid/{sample}_Myeloid_Pelka_SubClust_res.rds",sample=samples)
+rule insitutype_pelka_Myeloid_subclustering:
+	output:
+		res = "intermediate_outputs/InSituType/sup/res/Myeloid/{sample}_Myeloid_Pelka_SubClust_res.rds",
+		plot = "intermediate_outputs/plots/ClusterPlots/InSituType/sup/Myeloid/{sample}_Myeloid_Pelka_SubClust_flightpath_plot.pdf"
+	params:
+		utils = "src/cosmx_utils.R",
+		meta_path = "intermediate_outputs/Seurat_meta/InSituType/V2/",
+		ref_mat = "../data/Pelka/Pelka_ImmuneStromal_reference_matrix.rds"
+	priority: 52
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 15000,
+		mem_mb2 = 15000,
+		runtime_min = 360,
+		disk_mb = 3000
+	script:
+		config["scripts"]+"insitutype_pelka_Myeloid_subclustering.R"
+
+
+rule cosmx_pelka_subclusters_barplots:
+	output:
+		myeloid_bar = "../plots/FigS4B_Myeloid.pdf",
+		tnk_bar = "../plots/FigS4B_TNK.pdf"
+	params:
+		myeloid_path = "intermediate_outputs/InSituType/sup/res/Myeloid",
+		tnk_path = "intermediate_outputs/InSituType/sup/res/TNK"
+	priority: 51
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 2000,
+		mem_mb2 = 2000,
+		runtime_min = 10,
+		disk_mb = 2000
+	script:
+		config["scripts"]+"pelka_subclusters_barplot.R"
+
+rule plot_UH20_representative_FOV:
+	output:
+		UH20_FOV11_TAMs_T = "../plots/FOVplots/Fig4A.pdf",
+		UH20_FOV11_Epi_T = "../plots/Fig4C.pdf"
+	params:
+		utils = "src/cosmx_utils.R"
+	priority: 51
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 8000,
+		mem_mb2 = 8000,
+		runtime_min = 60,
+		disk_mb = 1000
+	script:
+		config["scripts"]+"plot_UH20_representative_FOV.R"
+
+
+
+#######KEEP########
+#epiT-epiOnly DE analysis variation: only real intra-epithelial tnk cells (touching epi cells >= 4) will be considered to define the pool of epiT cells
+rule merged_epiT_epiOnly_DE_analysis_HM_InSituType_TNKsubset:
+	input:
+		seurat = config["cosmx_data"]+"SeuratObject_Base.RDS"
+	output:
+		de_res = "intermediate_outputs/DE_res/epiT_vs_epiOnly/InSituType/Cosmx_HM_InSitu_epiT_epiOnly_4Neigh_DE_res_TNKsubset.rds"
+	params:
+		utils = "src/cosmx_utils.R",
+		HM = "HM",
+		meta_path = "intermediate_outputs/Seurat_meta/InSituType/V2/",
+		n_neigh = 4,
+		n_epit = 3 
+	priority: 50
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 20000,
+		mem_mb2 = 20000,
+		runtime_min = 180,
+		disk_mb = 1000
+	script:
+		config["scripts"]+"merged_epiT_epiOnly_DE_analysis_TNKsubset.R"
+
+
+#######KEEP#########
+rule merged_epiT_epiOnly_DE_analysis_nHM_InSituType_TNKsubset:
+	input:
+		seurat = config["cosmx_data"]+"SeuratObject_Base.RDS"
+	output:
+		de_res = "intermediate_outputs/DE_res/epiT_vs_epiOnly/InSituType/Cosmx_nHM_InSitu_epiT_epiOnly_4Neigh_DE_res_TNKsubset.rds"
+	params:
+		utils = "src/cosmx_utils.R",
+		HM = "nHM",
+		meta_path = "intermediate_outputs/Seurat_meta/InSituType/V2/",
+		n_neigh = 4,
+		n_epit = 3
+	priority: 50
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 20000,
+		mem_mb2 = 20000,
+		runtime_min = 180,
+		disk_mb = 1000
+	script:
+		config["scripts"]+"merged_epiT_epiOnly_DE_analysis_TNKsubset.R"
+#####KEEP######
+rule merged_epiT_epiOnly_DE_analysis_ALL_InSituType_TNKsubset:
+	input:
+		seurat = config["cosmx_data"]+"SeuratObject_Base.RDS"
+	output:
+		de_res = "intermediate_outputs/DE_res/epiT_vs_epiOnly/InSituType/Cosmx_ALL_InSitu_epiT_epiOnly_4Neigh_DE_res_TNKsubset.rds"
+	params:
+		utils = "src/cosmx_utils.R",
+		HM = "ALL",
+		meta_path = "intermediate_outputs/Seurat_meta/InSituType/V2/",
+		n_neigh = 4,
+		n_epit = 3
+	priority: 50
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 35000,
+		mem_mb2 = 35000,
+		runtime_min = 180,
+		disk_mb = 1000
+	script:
+		config["scripts"]+"merged_epiT_epiOnly_DE_analysis_TNKsubset.R"
+
+#define T-touch as T/NK cells in touch with >= 3 epithelial cells (higher chance to be intra-epithelial)
+########KEEP#########
+rule merged_touchingT_notouchingT_DE_analysis_HM_TNKsubset:
+	input:
+		seurat = config["cosmx_data"]+"SeuratObject_Base.RDS"
+	output:
+		de_res = "intermediate_outputs/DE_res/Ttouch_vs_Tnotouch/InSituType/Cosmx_HM_Ttouch_Tnotouch_DE_res_TNKsubset.rds"
+	params:
+		utils = "src/cosmx_utils.R",
+		HM = "HM",
+		meta_path = "intermediate_outputs/Seurat_meta/InSituType/V2/",
+	priority: 50
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 20000,
+		mem_mb2 = 20000,
+		runtime_min = 180,
+		disk_mb = 1000
+	script:
+		config["scripts"]+"merged_touchingT_notouchingT_DE_analysis_TNKsubset.R"
+
+########KEEP########
+rule merged_touchingT_notouchingT_DE_analysis_nHM_TNKsubset:
+	input:
+		seurat = config["cosmx_data"]+"SeuratObject_Base.RDS"
+	output:
+		de_res = "intermediate_outputs/DE_res/Ttouch_vs_Tnotouch/InSituType/Cosmx_nHM_Ttouch_Tnotouch_DE_res_TNKsubset.rds"
+	params:
+		utils = "src/cosmx_utils.R",
+		HM = "nHM",
+		meta_path = "intermediate_outputs/Seurat_meta/InSituType/V2/",
+	priority: 50
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 20000,
+		mem_mb2 = 20000,
+		runtime_min = 180,
+		disk_mb = 1000
+	script:
+		config["scripts"]+"merged_touchingT_notouchingT_DE_analysis_TNKsubset.R"
+
+#########KEEP#######
+rule merged_touchingT_notouchingT_DE_analysis_ALL_TNKsubset:
+	input:
+		seurat = config["cosmx_data"]+"SeuratObject_Base.RDS"
+	output:
+		de_res = "intermediate_outputs/DE_res/Ttouch_vs_Tnotouch/InSituType/Cosmx_ALL_Ttouch_Tnotouch_DE_res_TNKsubset.rds"
+	params:
+		utils = "src/cosmx_utils.R",
+		HM = "ALL",
+		meta_path = "intermediate_outputs/Seurat_meta/InSituType/V2/",
+	priority: 50
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 20000,
+		mem_mb2 = 20000,
+		runtime_min = 180,
+		disk_mb = 1000
+	script:
+		config["scripts"]+"merged_touchingT_notouchingT_DE_analysis_TNKsubset.R"
+
+
+######KEEP######
+rule merged_myelT_myelNoT_DE_analysis_HM:
+	input:
+		seurat = config["cosmx_data"]+"SeuratObject_Base.RDS"
+	output:
+		de_res = "intermediate_outputs/DE_res/myelT_vs_myelNoT/Cosmx_HM_myelT_myelNoT_DE_res.rds"
+	params:
+		utils = "src/cosmx_utils.R",
+		HM = "HM",
+		meta_path = "intermediate_outputs/Seurat_meta/InSituType/V2/"
+	priority: 50
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 15000,
+		mem_mb2 = 15000,
+		runtime_min = 360,
+		disk_mb = 1000
+	script:
+		config["scripts"]+"merged_myelT_myelNoT_DE_analysis.R"
+
+#######KEEP#########
+rule merged_myelT_myelNoT_DE_analysis_nHM:
+	input:
+		seurat = config["cosmx_data"]+"SeuratObject_Base.RDS"
+	output:
+		de_res = "intermediate_outputs/DE_res/myelT_vs_myelNoT/Cosmx_nHM_myelT_myelNoT_DE_res.rds"
+	params:
+		utils = "src/cosmx_utils.R",
+		HM = "nHM",
+		meta_path = "intermediate_outputs/Seurat_meta/InSituType/V2/"
+	priority: 50
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 15000,
+		mem_mb2 = 15000,
+		runtime_min = 360,
+		disk_mb = 1000
+	script:
+		config["scripts"]+"merged_myelT_myelNoT_DE_analysis.R"
+######KEEP#######
+rule ALL_myelT_myelNoT_DE_analysis:
+	input:
+		seurat = config["cosmx_data"]+"SeuratObject_Base.RDS"
+	output:
+		de_res = "intermediate_outputs/DE_res/myelT_vs_myelNoT/Cosmx_ALL_myelT_myelNoT_DE_res.rds"
+	params:
+		utils = "src/cosmx_utils.R",
+		meta_path = "intermediate_outputs/Seurat_meta/InSituType/V2/"
+	priority: 50
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 15000,
+		mem_mb2 = 15000,
+		runtime_min = 360,
+		disk_mb = 1000
+	script:
+		config["scripts"]+"ALL_myelT_myelNoT_DE_analysis.R"
+
+
+rule compare_CD74_expression_EpiT_TAMT:
+	output:
+		plot = "../plots/FigS5B_CD74_expression_EpiT_MacroT_boxplot.pdf"
+	params:
+		utils = "src/cosmx_utils.R",
+		meta_path ="intermediate_outputs/Seurat_meta/InSituType/V2"
+	priority: 49
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 10000,
+		mem_mb2 = 10000,
+		runtime_min = 60,
+		disk_mb = 1000
+	script:
+		config["scripts"]+"compare_CD74_expression_EpiT_TAMT.R"
+
+############################################HCT116 co-culture experiment############################################
+############Compare gene expression of HCT116 cell line with/without  co-culture with active CD8 T cells############
+rule HCT116_DE_analysis:
+	input:
+		mat = "../data/HCT116.exp.salmon.merged.gene_counts.tsv"
+	output:
+		dds = "intermediate_outputs/HCT116/res/HCT116_EpiT_EpiOnly_dds_object_NCG7.rds",
+		de_res = "intermediate_outputs/HCT116/res/HCT116_EpiT_EpiOnly_DE_res_NCG7.rds"
+	params:
+		ncg = config["ncg_genes"]
+	priority: 48
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 15000,
+		mem_mb2 = 15000,
+		runtime_min = 360,
+		disk_mb = 1500
+	script:
+		config["scripts"]+"HCT116_DE_analysis.R"
+
+
+############################################PLOT MAIN FIGURE 4 PANELS############################################
+rule plot_DE_results:
+	output:
+		volcano_tam = "../plots/Fig4B_ALL_TAMT_de_volcano.pdf",
+		path_dot_tam = "../plots/FigS4C_ALL_TAMT_de_reactome_enrichment_padj_001_dotplot.pdf",
+		volcano_epi = "../plots/Fig4E_ALL_EpiT_de_volcano.pdf",
+		volcano_hct = "../plots/Fig4I_ALL_HCT116_coculture_de_volcano.pdf",
+		volcano_t = "../plots/Fig4D_ALL_IET_de_volcano.pdf"
+	params:
+		enrich_utils = "src/enrichment_funcs.R",
+		utils = "src/cosmx_utils.R",
+		react = config["reactome_gsets"]
+	priority: 47
+	conda:
+		"cosmx"
+	resources:
+		mem_mb = 8000,
+		mem_mb2 = 8000,
+		runtime_min = 60,
+		disk_mb = 1000
+	script:
+		config["scripts"]+"plot_DE_results.R"
+
+
+#Cosmx Nolan module
+module cosmx_nolan:
+	snakefile:
+		"./snakefiles/cosmx_nolan.smk"
+	config:
+		config
+use rule * from cosmx_nolan
+

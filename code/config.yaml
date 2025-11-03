@@ -1,0 +1,10 @@
+scripts: "./src/"
+
+data: "../data/"
+cosmx_data: "../data/ITH2_CosMx/"
+cosmx_flat_data: "../data/ITH2_CosMx/flatFiles/"
+
+cosmx_nolan_path: "../data/CosMx_Nolan"
+
+ncg_genes: "../data/NCG7_symbol2entrez.tsv"
+reactome_gsets: "../data/reactome_v72_human_EntrezSymbol_df.txt"
