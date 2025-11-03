@@ -13,7 +13,7 @@ mamba env create -f code/envs/cosmx_archive.yaml
 
 You will need to install Seurat v5.0.0 and InSituType v1.0.0 separately with R:
 
-```
+```r
 remotes::install_version("Seurat", version = "5.0.0")
 devtools::install_github("https://github.com/Nanostring-Biostats/InSituType@v1.0.0")
 ```
