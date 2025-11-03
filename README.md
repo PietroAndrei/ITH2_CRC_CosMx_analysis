@@ -41,8 +41,8 @@ snakemake -np rule_name
 snakemake rule_name
 ```
 
-
-NB** If you have access to a HPC environment to run the pipeline (recommended), Snakemake can directly communicate with job schedulers like SLURM and SGE using Snakemake profiles (https://github.com/Snakemake-Profiles). 
+## Practical suggestions for HPC users
+If you have access to a HPC environment to run the pipeline (recommended), Snakemake can directly communicate with job schedulers like SLURM and SGE using Snakemake profiles (https://github.com/Snakemake-Profiles). 
 You can download our modified version of the Snakemake profile for SGE scheduler at https://github.com/PietroAndrei/SnakemakeProfile_CSSGE. 
 Follow the instructions on the Github repository to download and set up the Snakemake profile on the cluster. 
 Once the Snakemake profile is accessible in the right `~/.config/snakemake/` folder, you can run Snakemake using the following command:
